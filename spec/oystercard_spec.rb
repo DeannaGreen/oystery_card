@@ -1,12 +1,19 @@
 require 'oystercard'
 
 describe Oystercard do
+  let(:entry_station){ {name: "Old Street", zone: 1} }
+  let(:exit_station){ {name: "Old Street", zone: 1} }
+  let(:journey){ {entry_station: entry_station, exit_station: exit_station} }
+
   it 'has a balance of zero' do
     expect(subject.balance).to eq(0)
   end
 
+  it 'has an empty journey list as default' do
+    expect(subject.journeys).to be_empty
+  end
+
   describe '#top_up' do
-    it { is_expected.to respond_to(:top_up).with(1).argument}
 
     it 'balance can be topped up' do
       subject.top_up(5)
@@ -21,30 +28,39 @@ describe Oystercard do
   end
 
   describe '#touch_in' do
-    it { is_expected.to respond_to(:touch_in) }
+    before(:each) do
+      subject.top_up(5)
+      subject.touch_in(entry_station)
+    end
 
     it 'card is in use if #touch_in is called' do
-      subject.top_up(5)
-      subject.touch_in
       expect(subject.in_journey?).to be_truthy
+    end
+
+    it 'remembers the entry station' do
+      expect(subject.entry_station).to eq entry_station
     end
   end
 
   describe '#touch_out' do
-    it { is_expected.to respond_to(:touch_out) }
+    before(:each) do
+      subject.top_up(5)
+      subject.touch_in(entry_station)
+    end
 
     it 'card is not in use if #touch_in is called' do
-      subject.top_up(5)
-      subject.touch_in
-      subject.touch_out
+      subject.touch_out(exit_station)
       expect(subject.in_journey?).to be_falsey
     end
 
     it 'reduces balance by fare price when touch_out' do
       min_fare = Oystercard::MINIMUM_FARE
-      subject.top_up(5)
-      subject.touch_in
-      expect{ subject.touch_out }.to change{ subject.balance }.by -(min_fare)
+      expect{ subject.touch_out(exit_station) }.to change{ subject.balance }.by -(min_fare)
+    end
+
+    it 'remembers the exit station' do
+      subject.touch_out(exit_station)
+      expect(subject.exit_station).to eq exit_station
     end
   end
 
@@ -55,7 +71,16 @@ describe Oystercard do
   describe 'minimum balence' do
     it 'card has to have minimum value of £1' do
       min_balance = Oystercard::MINIMUM_BALANCE
-      expect{ subject.touch_in }.to raise_error "Minimum balance needs to be #{min_balance}"
+      expect{ subject.touch_in(entry_station) }.to raise_error "Minimum balance needs to be #{min_balance}"
+    end
+  end
+
+  describe '#journeys' do
+    it 'stores a journey' do
+      subject.top_up(5)
+      subject.touch_in(entry_station)
+      subject.touch_out(exit_station)
+      expect(subject.journeys).to include journey
     end
   end
 
