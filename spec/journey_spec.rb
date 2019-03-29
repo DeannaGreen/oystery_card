@@ -2,10 +2,8 @@ require 'journey'
 
 describe Journey do
   let(:station) { double :station, zone: 1}
-
-  it 'knows if a journey is not complete' do
-    expect(subject).not_to be_complete
-  end
+  let(:entry_station){ {name: "Old Street", zone: 1} }
+  let(:exit_station){ {name: "Old Street", zone: 3} }
 
   it 'has a penalty fare' do
     expect(Journey::PENALTY_FARE).to eq 6
@@ -23,11 +21,12 @@ describe Journey do
     end
 
     it 'calculates a fare' do
-      expect(subject.fare).to eq 2
+      expect(subject.fare).to eq 6
     end
+  end
 
-    it 'knows if a journey is complete' do
-      expect(subject).to be_complete
-    end
+  it 'remembers the exit station' do
+    subject.finish(exit_station)
+    expect(subject.exit_station).to eq exit_station
   end
 end

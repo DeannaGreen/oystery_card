@@ -9,15 +9,11 @@ describe Oystercard do
     expect(subject.balance).to eq(0)
   end
 
-  it 'has an empty journey list as default' do
-    expect(subject.journeys).to be_empty
-  end
-
   describe '#top_up' do
 
     it 'balance can be topped up' do
-      subject.top_up(5)
-      expect(subject.balance).to eq(5)
+      subject.top_up(10)
+      expect(subject.balance).to eq(10)
     end
 
     it 'raises an error if the maximum balance is exceeded' do
@@ -29,7 +25,7 @@ describe Oystercard do
 
   describe '#touch_in' do
     before(:each) do
-      subject.top_up(5)
+      subject.top_up(10)
       subject.touch_in(entry_station)
     end
 
@@ -40,12 +36,21 @@ describe Oystercard do
     it 'remembers the entry station' do
       expect(subject.entry_station).to eq entry_station
     end
+
+    it 'charges penalty fare if not touched_out' do
+      expect(subject.balance).to eq 4
+    end
   end
 
   describe '#touch_out' do
     before(:each) do
-      subject.top_up(5)
+      subject.top_up(8)
       subject.touch_in(entry_station)
+    end
+
+    it 'charges minimum fare' do
+      subject.touch_out(exit_station)
+      expect(subject.balance).to eq 1
     end
 
     it 'card is not in use if #touch_in is called' do
@@ -54,13 +59,7 @@ describe Oystercard do
     end
 
     it 'reduces balance by fare price when touch_out' do
-      min_fare = Oystercard::MINIMUM_FARE
-      expect{ subject.touch_out(exit_station) }.to change{ subject.balance }.by -(min_fare)
-    end
-
-    it 'remembers the exit station' do
-      subject.touch_out(exit_station)
-      expect(subject.exit_station).to eq exit_station
+      expect{ subject.touch_out(exit_station) }.to change{ subject.balance }.by -1
     end
   end
 
@@ -72,15 +71,6 @@ describe Oystercard do
     it 'card has to have minimum value of £1' do
       min_balance = Oystercard::MINIMUM_BALANCE
       expect{ subject.touch_in(entry_station) }.to raise_error "Minimum balance needs to be #{min_balance}"
-    end
-  end
-
-  describe '#journeys' do
-    it 'stores a journey' do
-      subject.top_up(5)
-      subject.touch_in(entry_station)
-      subject.touch_out(exit_station)
-      expect(subject.journeys).to include journey
     end
   end
 
